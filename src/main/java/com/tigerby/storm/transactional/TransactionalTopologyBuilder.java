@@ -37,7 +37,6 @@ import java.util.Set;
  * class is deprecated.
  * 
  */
-@Deprecated
 public class TransactionalTopologyBuilder {
     String _id;
     String _spoutId;
