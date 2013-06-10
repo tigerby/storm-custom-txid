@@ -1,8 +1,9 @@
 package com.tigerby.storm.transactional;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 
-public class TransactionAttempt {
+public class TransactionAttempt implements Serializable {
     BigInteger _txid;
     long _attemptId;
     
