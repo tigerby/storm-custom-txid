@@ -20,10 +20,8 @@ import org.apache.log4j.Logger;
 
 public class TransactionalSpoutCoordinator extends BaseRichSpout { 
     public static final Logger LOG = Logger.getLogger(TransactionalSpoutCoordinator.class);
-    
-    public static final BigInteger INIT_TXID = BigInteger.ONE;
-    
-    
+
+
     public static final String TRANSACTION_BATCH_STREAM_ID = TransactionalSpoutCoordinator.class.getName() + "/batch";
     public static final String TRANSACTION_COMMIT_STREAM_ID = TransactionalSpoutCoordinator.class.getName() + "/commit";
 
@@ -39,7 +37,7 @@ public class TransactionalSpoutCoordinator extends BaseRichSpout {
     
     private SpoutOutputCollector _collector;
     private Random _rand;
-    BigInteger _currTransaction;
+    Transaction<BigInteger> _currTransaction;
     int _maxTransactionActive;
     StateInitializer _initializer;
     
@@ -89,7 +87,7 @@ public class TransactionalSpoutCoordinator extends BaseRichSpout {
             } else if(status.status==AttemptStatus.COMMITTING) {
                 _activeTx.remove(tx.getTransactionId());
                 _coordinatorState.cleanupBefore(tx.getTransactionId());
-                _currTransaction = nextTransactionId(tx.getTransactionId());
+                _currTransaction = transaction.nextTransactionId(tx.getTransactionId());
                 _state.setData(CURRENT_TX, _currTransaction);
             }
             sync();
@@ -134,9 +132,9 @@ public class TransactionalSpoutCoordinator extends BaseRichSpout {
                         TransactionAttempt attempt = new TransactionAttempt(curr, _rand.nextLong());
                         Object state = _coordinatorState.getState(curr, _initializer);
                         _activeTx.put(curr, new TransactionStatus(attempt));
-                        _collector.emit(TRANSACTION_BATCH_STREAM_ID, new Values(attempt, state, previousTransactionId(_currTransaction)), attempt);
+                        _collector.emit(TRANSACTION_BATCH_STREAM_ID, new Values(attempt, state, attempt.previousTransactionId(_currTransaction)), attempt);
                     }
-                    curr = nextTransactionId(curr);
+                    curr = transaction.nextTransactionId(curr);
                 }
             }     
         } catch(FailedException e) {
@@ -171,26 +169,14 @@ public class TransactionalSpoutCoordinator extends BaseRichSpout {
             return attempt.toString() + " <" + status.toString() + ">";
         }        
     }
-    
-    
-    private BigInteger nextTransactionId(BigInteger id) {
-        return id.add(BigInteger.ONE);
-    }
-    
-    private BigInteger previousTransactionId(BigInteger id) {
-        if(id.equals(INIT_TXID)) {
-            return null;
-        } else {
-            return id.subtract(BigInteger.ONE);
-        }
-    }    
-    
-    private BigInteger getStoredCurrTransaction(TransactionalState state) {
-        BigInteger ret = (BigInteger) state.getData(CURRENT_TX);
-        if(ret==null) return INIT_TXID;
+
+
+    private Object getStoredCurrTransaction(TransactionalState state) {
+        Object ret = state.getData(CURRENT_TX);
+        if(ret==null) return TransactionManager.newTransaction();
         else return ret;
     }
-    
+
     private class StateInitializer implements RotatingTransactionalState.StateInitializer {
         @Override
         public Object init(BigInteger txid, Object lastState) {

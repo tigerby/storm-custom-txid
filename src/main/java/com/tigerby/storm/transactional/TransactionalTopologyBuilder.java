@@ -44,14 +44,16 @@ public class TransactionalTopologyBuilder {
     Map<String, Component> _bolts = new HashMap<String, Component>();
     Integer _spoutParallelism;
     List<Map> _spoutConfs = new ArrayList();
+    transaction
     
     // id is used to store the state of this transactionalspout in zookeeper
     // it would be very dangerous to have 2 topologies active with the same id in the same cluster    
-    public TransactionalTopologyBuilder(String id, String spoutId, ITransactionalSpout spout, Number spoutParallelism) {
+    public TransactionalTopologyBuilder(String id, String spoutId, ITransactionalSpout spout, Number spoutParallelism, Class<? extends Transaction> clazz) {
         _id = id;
         _spoutId = spoutId;
         _spout = spout;
         _spoutParallelism = (spoutParallelism == null) ? null : spoutParallelism.intValue();
+        clazz.
     }
     
     public TransactionalTopologyBuilder(String id, String spoutId, ITransactionalSpout spout) {
@@ -113,7 +115,7 @@ public class TransactionalTopologyBuilder {
     public TopologyBuilder buildTopologyBuilder() {
         String coordinator = _spoutId + "/coordinator";
         TopologyBuilder builder = new TopologyBuilder();
-        SpoutDeclarer declarer = builder.setSpout(coordinator, new TransactionalSpoutCoordinator(_spout));
+        SpoutDeclarer declarer = builder.setSpout(coordinator, new TransactionalSpoutCoordinator(_spout, transactionManager));
         for(Map conf: _spoutConfs) {
             declarer.addConfigurations(conf);
         }

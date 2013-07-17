@@ -1,9 +1,12 @@
 package com.tigerby.storm.transactional;
 
+import com.tigerby.storm.transactional.state.TransactionalState;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 
-public class TransactionAttempt implements Serializable {
+public class TransactionAttempt implements Transaction<BigInteger>, Serializable {
+    public static BigInteger INIT_TXID = BigInteger.ONE;
     BigInteger _txid;
     long _attemptId;
     
@@ -41,5 +44,30 @@ public class TransactionAttempt implements Serializable {
     @Override
     public String toString() {
         return "" + _txid + ":" + _attemptId;
-    }    
+    }
+
+    @Override
+    public BigInteger getInitTxId() {
+        return INIT_TXID;
+    }
+
+    @Override
+    public BigInteger nextTransactionId(BigInteger id) {
+        return id.add(BigInteger.ONE);
+    }
+
+    @Override
+    public BigInteger previousTransactionId(BigInteger id) {
+        if(id.equals(INIT_TXID)) {
+            return null;
+        } else {
+            return id.subtract(BigInteger.ONE);
+        }
+    }
+
+    @Override
+    public Transaction<BigInteger> newTransaction() {
+        return new TransactionAttempt();
+    }
+
 }

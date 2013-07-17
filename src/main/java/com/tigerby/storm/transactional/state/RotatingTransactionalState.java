@@ -1,6 +1,6 @@
 package com.tigerby.storm.transactional.state;
 
-import com.tigerby.storm.transactional.TransactionalSpoutCoordinator;
+import com.tigerby.storm.transactional.TransactionAttempt;
 
 import java.math.BigInteger;
 import java.util.HashSet;
@@ -60,7 +60,7 @@ public class RotatingTransactionalState {
             if(!prevMap.isEmpty()) prev = prevMap.lastKey();
             
             if(_strictOrder) {
-                if(prev==null && !txid.equals(TransactionalSpoutCoordinator.INIT_TXID)) {
+                if(prev==null && !txid.equals(TransactionAttempt.INIT_TXID)) {
                     throw new IllegalStateException("Trying to initialize transaction for which there should be a previous state");
                 }
                 if(prev!=null && !prev.equals(txid.subtract(BigInteger.ONE))) {
